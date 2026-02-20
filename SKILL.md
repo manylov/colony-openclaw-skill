@@ -9,28 +9,84 @@ You are an autonomous agent managing a Colony game account on Solana mainnet. Co
 
 ## Environment Setup
 
-### Required Environment Variables
+### Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SOLANA_PRIVATE_KEY` | Yes | Base58-encoded Solana keypair secret key |
+| `SOLANA_PRIVATE_KEY` | Yes | Base58-encoded Solana keypair secret key (auto-generated on first run) |
 | `SOLANA_RPC_URL` | No | Solana RPC endpoint (default: `https://api.mainnet-beta.solana.com`) |
 | `JUPITER_API_KEY` | For swaps/price | Free API key from https://portal.jup.ag (required for `swap`, `swap-quote`, `price` commands) |
 
-### First-Time Setup
+### First-Time Onboarding
+
+Follow these steps **exactly in order** the first time you set up:
+
+#### Step 1: Install dependencies
 
 ```bash
 cd <skill-directory>
 npm install
 ```
 
-Verify the installation:
+#### Step 2: Generate your wallet
+
+If `SOLANA_PRIVATE_KEY` is not already set, generate a new wallet:
 
 ```bash
-node colony-cli.mjs game-state
+node colony-cli.mjs generate-wallet
 ```
 
-This should return JSON with `"ok": true` and the current game state.
+This outputs JSON with `publicKey` and `privateKey`. **Immediately**:
+1. Save `privateKey` as your `SOLANA_PRIVATE_KEY` environment variable. **Never share it.**
+2. Note the `publicKey` — this is the wallet address.
+
+#### Step 3: Tell your owner to fund the wallet
+
+Send a message to your owner with:
+- **Wallet address**: the `publicKey` from step 2
+- **How much to send**: minimum **0.05 SOL** for transaction fees. For a full start (buying first land), recommend **0.5-1 SOL** so you can swap SOL for $OLO tokens.
+- **What it's for**: "This is my Colony game wallet. I need SOL to pay transaction fees and swap for $OLO tokens to buy land."
+
+#### Step 4: Wait for funding, then verify
+
+Once the owner confirms they sent SOL, check:
+
+```bash
+node colony-cli.mjs status
+```
+
+Confirm `solBalance` > 0. If still 0, wait 30 seconds and check again.
+
+#### Step 5: Swap SOL for $OLO tokens
+
+You need $OLO tokens to buy land (10,000 $OLO per land). First get a quote:
+
+```bash
+node colony-cli.mjs swap-quote --sol-amount 0.3
+```
+
+If the output looks reasonable, execute the swap:
+
+```bash
+node colony-cli.mjs swap --sol-amount 0.3
+```
+
+#### Step 6: Buy your first land
+
+Find an available plot and buy it:
+
+```bash
+node colony-cli.mjs find-land --count 1
+node colony-cli.mjs buy-land --land-id <id-from-above>
+```
+
+#### Step 7: Verify and start autonomous loop
+
+```bash
+node colony-cli.mjs status
+```
+
+You should now see 1 land mining $OLO. From here, follow the **Autonomous Loop** in the Strategy Guide section.
 
 ## Game Mechanics
 
@@ -76,6 +132,16 @@ This should return JSON with `"ok": true` and the current game state.
 ## CLI Command Reference
 
 All commands output JSON. All write commands require `SOLANA_PRIVATE_KEY`.
+
+### Setup Commands
+
+#### `generate-wallet` — Generate a new Solana keypair
+
+```bash
+node colony-cli.mjs generate-wallet
+```
+
+Returns: `publicKey` (address to fund), `privateKey` (save as `SOLANA_PRIVATE_KEY`). No env vars needed.
 
 ### Read Commands (no private key needed for `game-state`, `land-info`, `price`)
 

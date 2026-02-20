@@ -19,6 +19,7 @@
  *   swap --sol-amount <amt>  Execute Jupiter swap (SOL -> $OLO)
  *   recommend                AI-friendly next-best-action recommendation
  *   price                    Get $OLO token price via Jupiter
+ *   generate-wallet          Generate a new Solana keypair for the bot
  */
 
 import { readFileSync } from "fs";
@@ -1149,6 +1150,24 @@ async function cmdRecommend() {
   });
 }
 
+async function cmdGenerateWallet() {
+  const newKeypair = Keypair.generate();
+  const secretKeyBase58 = bs58.encode(newKeypair.secretKey);
+
+  out({
+    ok: true,
+    action: "generate_wallet",
+    publicKey: newKeypair.publicKey.toBase58(),
+    privateKey: secretKeyBase58,
+    instructions: [
+      "Save the privateKey as SOLANA_PRIVATE_KEY environment variable — keep it secret!",
+      `Send SOL to ${newKeypair.publicKey.toBase58()} to fund the wallet for transaction fees.`,
+      "Minimum recommended: 0.05 SOL for tx fees + SOL for swapping to $OLO.",
+      "Then run: node colony-cli.mjs status",
+    ],
+  });
+}
+
 // ============================================================================
 // CLI ENTRY
 // ============================================================================
@@ -1185,6 +1204,7 @@ async function main() {
         "swap --sol-amount <amt>",
         "recommend",
         "price",
+        "generate-wallet",
       ],
     });
     process.exit(1);
@@ -1229,6 +1249,9 @@ async function main() {
         break;
       case "price":
         await cmdPrice();
+        break;
+      case "generate-wallet":
+        await cmdGenerateWallet();
         break;
       default:
         fail(`Unknown command: ${command}`);
